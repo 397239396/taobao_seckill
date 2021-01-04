@@ -4,9 +4,13 @@
 
 import os
 import platform
+import requests
+import json
+import time
+
+from datetime import datetime
 from time import sleep
 from random import choice
-from datetime import datetime
 
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -39,14 +43,41 @@ def default_chrome_path():
         raise Exception("The chromedriver drive path attribute is not found.")
 
 
-
 class ChromeDrive:
 
     def __init__(self, chrome_path=default_chrome_path(), seckill_time=None, password=None):
         self.chrome_path = chrome_path
         self.seckill_time = seckill_time
         self.seckill_time_obj = datetime.strptime(self.seckill_time, '%Y-%m-%d %H:%M:%S')
+        self.seckill_time_ms = int(time.mktime(self.seckill_time_obj.timetuple()) * 1000.0 + self.seckill_time_obj.microsecond / 1000)
         self.password = password
+
+        """
+        获取时间差
+        :return:
+        """
+        self.diff = self.local_time()-self.tb_time()
+        print("系统时间差："+str(self.diff))
+
+    def tb_time(self):
+        """
+        从淘宝服务器获取时间毫秒
+        :return:
+        """
+        r1 = requests.get(url='http://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp',
+                        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 UBrowser/6.2.4098.3 Safari/537.36'})
+        ret = r1.text
+        js = json.loads(ret)
+        t= int(js['data']['t'])
+        print("淘宝时间："+str(t))
+        return t
+
+    def local_time(self):
+        """
+        获取本地毫秒时间
+        :return:
+        """
+        return int(round(time.time() * 1000))
 
     def start_driver(self):
         try:
@@ -113,21 +144,20 @@ class ChromeDrive:
         self._login()
         print("等待到点抢购...")
         while True:
-            current_time = datetime.now()
-            if (self.seckill_time_obj - current_time).seconds > 180:
+            local_time = self.local_time()
+            if self.seckill_time_ms - local_time > 180000:
                 self.driver.get("https://cart.taobao.com/cart.htm")
-                print("每分钟刷新一次界面，防止登录超时...")
                 sleep(60)
             else:
                 print("抢购时间点将近，停止自动刷新，准备进入抢购阶段...")
                 break
 
-
     def sec_kill(self):
         self.keep_wait()
         self.driver.get("https://cart.taobao.com/cart.htm")
         sleep(1)
-
+        self.diff = self.local_time()-self.tb_time()
+        print("最后校准时间差："+str(self.diff))
         if self.driver.find_element_by_id("J_SelectAll1"):
             self.driver.find_element_by_id("J_SelectAll1").click()
             print("已经选中全部商品！！！")
@@ -136,8 +166,8 @@ class ChromeDrive:
         retry_count = 0
 
         while True:
-            now = datetime.now()
-            if now >= self.seckill_time_obj:
+            local_time = self.local_time()
+            if local_time-self.diff >= self.seckill_time_ms:
                 print(f"开始抢购, 尝试次数： {str(retry_count)}")
                 if submit_succ:
                     print("订单已经提交成功，无需继续抢购...")
