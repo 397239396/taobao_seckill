@@ -174,7 +174,14 @@ class ChromeDrive:
                     break
                 if retry_count > max_retry_count:
                     print("重试抢购次数达到上限，放弃重试...")
+                    sleep(3600)
                     break
+
+                if retry_count > 0
+                    self.driver.get("https://cart.taobao.com/cart.htm")
+                    if self.driver.find_element_by_id("J_SelectAll1"):
+                        self.driver.find_element_by_id("J_SelectAll1").click()
+                        print("已经选中全部商品！！！")
 
                 retry_count += 1
 
@@ -189,12 +196,10 @@ class ChromeDrive:
                                 if click_submit_times < 10:
                                     self.driver.find_element_by_link_text('提交订单').click()
                                     print("已经点击提交订单按钮")
-                                    submit_succ = True
                                     break
                                 else:
                                     print("提交订单失败...")
                             except Exception as e:
-
                                 print("没发现提交按钮, 页面未加载, 重试...")
                                 click_submit_times = click_submit_times + 1
                                 sleep(0.1)
