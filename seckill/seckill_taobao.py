@@ -177,7 +177,7 @@ class ChromeDrive:
                     sleep(3600)
                     break
 
-                if retry_count > 0
+                if retry_count > 0:
                     self.driver.get("https://cart.taobao.com/cart.htm")
                     if self.driver.find_element_by_id("J_SelectAll1"):
                         self.driver.find_element_by_id("J_SelectAll1").click()
